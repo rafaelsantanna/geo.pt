@@ -24,6 +24,9 @@ class ExtractorPortugalCompleto:
         self.concelhos = []
         self.freguesias = []
         
+        # Metadados dos datasets
+        self.datasets_info = {}
+        
     def baixar_dataset(self, dataset_slug, nome):
         """Baixa um dataset específico do dados.gov.pt"""
         print(f"\n>> Baixando: {nome}")
@@ -35,6 +38,21 @@ class ExtractorPortugalCompleto:
             response = requests.get(url, timeout=30)
             if response.status_code == 200:
                 dataset = response.json()
+                
+                # Capturar metadados do dataset
+                self.datasets_info[nome] = {
+                    'titulo': dataset.get('title', nome),
+                    'organizacao': dataset.get('organization', {}).get('name', 'N/A'),
+                    'ultima_modificacao': dataset.get('last_modified', 'N/A'),
+                    'criado_em': dataset.get('created_at', 'N/A'),
+                    'frequencia': dataset.get('frequency', 'N/A'),
+                    'versao': dataset.get('version', 'N/A')
+                }
+                
+                # Mostrar informações do dataset
+                print(f"   Organização: {self.datasets_info[nome]['organizacao']}")
+                print(f"   Última atualização: {self.datasets_info[nome]['ultima_modificacao'][:10] if self.datasets_info[nome]['ultima_modificacao'] != 'N/A' else 'N/A'}")
+                
                 resources = dataset.get('resources', [])
                 
                 # Procurar recurso Excel/CSV
@@ -198,12 +216,27 @@ class ExtractorPortugalCompleto:
         df_freguesias.to_csv(self.output_dir / 'freguesias.csv', index=False, encoding='utf-8')
         print(f"   [OK] freguesias.csv")
         
+        # Determinar a versão baseada nas datas dos datasets
+        datas_modificacao = []
+        for info in self.datasets_info.values():
+            if info['ultima_modificacao'] != 'N/A':
+                datas_modificacao.append(info['ultima_modificacao'])
+        
+        # Usar a data mais recente dos datasets como versão
+        if datas_modificacao:
+            ultima_atualizacao = max(datas_modificacao)
+            # Extrair ano e mês da última atualização
+            versao_dados = ultima_atualizacao[:7].replace('-', '.')  # YYYY.MM
+        else:
+            versao_dados = 'N/A'
+        
         # JSON completo
         dados_completos = {
             'metadata': {
                 'fonte': 'dados.gov.pt',
                 'data_extracao': time.strftime('%Y-%m-%d %H:%M:%S'),
-                'versao': '2024.1',
+                'versao_dados': versao_dados,  # Versão baseada na última atualização dos datasets
+                'datasets_info': self.datasets_info,  # Informações detalhadas de cada dataset
                 'total_distritos': len(self.distritos),
                 'total_concelhos': len(self.concelhos),
                 'total_freguesias': len(self.freguesias)
@@ -234,6 +267,23 @@ class ExtractorPortugalCompleto:
         print(f"\nFREGUESIAS: {len(self.freguesias)}")
         print(f"  - Esperado: ~3091")
         print(f"  - Status: {'COMPLETO' if len(self.freguesias) >= 3090 else 'VERIFICAR'}")
+        
+        # Mostrar versão dos dados
+        print("\n" + "-"*60)
+        print("INFORMAÇÕES DOS DATASETS:")
+        print("-"*60)
+        
+        for nome, info in self.datasets_info.items():
+            if info['ultima_modificacao'] != 'N/A':
+                print(f"\n{nome}:")
+                print(f"  - Última atualização: {info['ultima_modificacao'][:10]}")
+                print(f"  - Organização: {info['organizacao']}")
+        
+        # Determinar versão geral
+        datas = [info['ultima_modificacao'] for info in self.datasets_info.values() if info['ultima_modificacao'] != 'N/A']
+        if datas:
+            versao = max(datas)[:7].replace('-', '.')
+            print(f"\nVersão dos dados: {versao}")
         
         print("\n" + "="*60)
         print(f"Arquivos salvos em: {self.output_dir.absolute()}/")
