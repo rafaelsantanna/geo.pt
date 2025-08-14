@@ -130,10 +130,6 @@ class ExtractorPortugalCompleto:
                 })
         
         print(f"   [OK] {len(self.concelhos)} concelhos processados")
-        
-        # Verificar se Viseu está presente
-        viseu_presente = any(c['name'] == 'Viseu' for c in self.concelhos)
-        print(f"   [CHECK] Concelho de Viseu: {'PRESENTE' if viseu_presente else 'AUSENTE'}")
     
     def processar_freguesias(self, df):
         """Processa TODAS as 3091+ freguesias"""
@@ -218,35 +214,6 @@ class ExtractorPortugalCompleto:
         print(f"\nFREGUESIAS: {len(self.freguesias)}")
         print(f"  - Esperado: ~3091")
         print(f"  - Status: {'COMPLETO' if len(self.freguesias) >= 3090 else 'VERIFICAR'}")
-        
-        # Análise do distrito de Viseu
-        print("\n" + "-"*60)
-        print("DISTRITO DE VISEU (código 18):")
-        print("-"*60)
-        
-        # Concelhos de Viseu
-        concelhos_viseu = [c for c in self.concelhos if c['distrito_id'] == '18']
-        print(f"\nConcelhos: {len(concelhos_viseu)}")
-        
-        # Listar concelhos
-        for c in sorted(concelhos_viseu, key=lambda x: x['name'])[:10]:
-            print(f"  - {c['name']} ({c['codigo']})")
-        if len(concelhos_viseu) > 10:
-            print(f"  ... e mais {len(concelhos_viseu)-10} concelhos")
-        
-        # Verificar concelho de Viseu especificamente
-        concelho_viseu = [c for c in concelhos_viseu if c['name'] == 'Viseu']
-        if concelho_viseu:
-            codigo_viseu = concelho_viseu[0]['codigo']
-            print(f"\n[OK] Concelho de Viseu encontrado: código {codigo_viseu}")
-            
-            # Freguesias do concelho de Viseu
-            freguesias_concelho_viseu = [f for f in self.freguesias if f['concelho_id'] == codigo_viseu]
-            print(f"  Freguesias no concelho de Viseu: {len(freguesias_concelho_viseu)}")
-            
-            # Total de freguesias no distrito
-            freguesias_distrito_viseu = [f for f in self.freguesias if f['concelho_id'].startswith('18')]
-            print(f"  Total de freguesias no distrito de Viseu: {len(freguesias_distrito_viseu)}")
         
         print("\n" + "="*60)
         print(f"Arquivos salvos em: {self.output_dir.absolute()}/")
