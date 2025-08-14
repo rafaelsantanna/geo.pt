@@ -43,13 +43,13 @@ O script instala automaticamente as bibliotecas necessárias (pandas e openpyxl)
 Abra o terminal/prompt de comando na pasta do script e execute:
 
 ```bash
-python portugal_dados_completos.py
+python portugal_geo_fetch.py
 ```
 
 Ou se tiver Python 3:
 
 ```bash
-python3 portugal_dados_completos.py
+python3 portugal_geo_fetch.py
 ```
 
 ### Resultado
