@@ -68,39 +68,59 @@ class ExtractorPortugalCompleto:
         
         return None
     
-    def processar_distritos(self):
-        """Cria lista oficial de distritos de Portugal"""
+    def processar_distritos(self, df=None):
+        """Processa distritos de Portugal - dinâmico ou fallback"""
         print("\n>> Processando Distritos...")
         
-        # Lista oficial de distritos
-        distritos_oficiais = [
-            ("01", "Aveiro"),
-            ("02", "Beja"),
-            ("03", "Braga"),
-            ("04", "Bragança"),
-            ("05", "Castelo Branco"),
-            ("06", "Coimbra"),
-            ("07", "Évora"),
-            ("08", "Faro"),
-            ("09", "Guarda"),
-            ("10", "Leiria"),
-            ("11", "Lisboa"),
-            ("12", "Portalegre"),
-            ("13", "Porto"),
-            ("14", "Santarém"),
-            ("15", "Setúbal"),
-            ("16", "Viana do Castelo"),
-            ("17", "Vila Real"),
-            ("18", "Viseu"),
-            ("20", "Açores"),
-            ("30", "Madeira")
-        ]
+        # Se recebeu dados dinâmicos, usar
+        if df is not None:
+            print("   Usando dados dinâmicos do dados.gov.pt...")
+            for _, row in df.iterrows():
+                nome = str(row.get('designacao', row.get('nome', ''))).strip()
+                codigo = str(row.get('dicofre', row.get('codigo', ''))).strip()
+                
+                if nome and codigo:
+                    # Padronizar código para 2 dígitos
+                    if len(codigo) == 1:
+                        codigo = '0' + codigo
+                    
+                    self.distritos.append({
+                        'name': nome,
+                        'codigo': codigo
+                    })
         
-        for codigo, nome in distritos_oficiais:
-            self.distritos.append({
-                'name': nome,
-                'codigo': codigo
-            })
+        # Se não conseguiu dados ou está vazio, usar fallback
+        if not self.distritos:
+            print("   Usando lista oficial (fallback)...")
+            # Lista oficial de distritos como fallback
+            distritos_oficiais = [
+                ("01", "Aveiro"),
+                ("02", "Beja"),
+                ("03", "Braga"),
+                ("04", "Bragança"),
+                ("05", "Castelo Branco"),
+                ("06", "Coimbra"),
+                ("07", "Évora"),
+                ("08", "Faro"),
+                ("09", "Guarda"),
+                ("10", "Leiria"),
+                ("11", "Lisboa"),
+                ("12", "Portalegre"),
+                ("13", "Porto"),
+                ("14", "Santarém"),
+                ("15", "Setúbal"),
+                ("16", "Viana do Castelo"),
+                ("17", "Vila Real"),
+                ("18", "Viseu"),
+                ("20", "Açores"),
+                ("30", "Madeira")
+            ]
+            
+            for codigo, nome in distritos_oficiais:
+                self.distritos.append({
+                    'name': nome,
+                    'codigo': codigo
+                })
         
         print(f"   [OK] {len(self.distritos)} distritos processados")
     
@@ -223,15 +243,21 @@ class ExtractorPortugalCompleto:
         """Executa todo o processo de extração"""
         print("="*60)
         print("EXTRATOR DE DADOS ADMINISTRATIVOS DE PORTUGAL")
-        print("Versão Completa - 308 Concelhos + 3091 Freguesias")
+        print("Versão Completa - Todos os Dados Oficiais")
         print("="*60)
         
         # 1. Baixar datasets
+        # Tentar baixar distritos primeiro (pode não existir)
+        df_distritos = self.baixar_dataset('distritos-de-portugal', 'Distritos de Portugal')
+        if df_distritos is None:
+            # Tentar slug alternativo
+            df_distritos = self.baixar_dataset('distritos', 'Distritos')
+        
         df_concelhos = self.baixar_dataset('concelhos-de-portugal', 'Concelhos de Portugal')
         df_freguesias = self.baixar_dataset('freguesias-de-portugal', 'Freguesias de Portugal')
         
         # 2. Processar dados
-        self.processar_distritos()
+        self.processar_distritos(df_distritos)  # Passa os dados ou None
         self.processar_concelhos(df_concelhos)
         self.processar_freguesias(df_freguesias)
         
